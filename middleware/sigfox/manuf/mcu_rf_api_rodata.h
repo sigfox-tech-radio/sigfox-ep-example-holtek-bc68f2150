@@ -40,13 +40,22 @@
 #include "sigfox_types.h"
 
 typedef struct {
+	sfx_u8 size;
+	sfx_u16 delta_f;
+	sfx_u8 tab[100];
+}MCU_RF_table_const_t;
+
+
+typedef struct {
 	sfx_u8 id[4];
 	sfx_u8 key[16];
-	sfx_u8 testkey[16];
 	sfx_u8 pac[8];
-	sfx_u8 pwrTab[100];
-    sfx_u8 version[24];
-    sfx_u16 empty[172];
+	MCU_RF_table_const_t pwrtab_100bps_HP;
+	MCU_RF_table_const_t pwrtab_100bps_LP;
+	MCU_RF_table_const_t pwrtab_600bps_HP;
+	MCU_RF_table_const_t pwrtab_600bps_LP;
+    sfx_u8 version[16];
+    sfx_u8 empty[56];
 } MCU_RF_RODATA_t;
 
 extern __attribute__((at(0x1E00))) const MCU_RF_RODATA_t mcu_rf_rodata;

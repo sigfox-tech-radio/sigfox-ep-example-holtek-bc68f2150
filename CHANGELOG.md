@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.1](https://github.com/sigfox-tech-radio/sigfox-ep-example-holtek-bc68f2150/releases/tag/v1.1) - 16 Oct 2023
+
+### Changed
+
+* Improve **spectrum template** with new amplitude profile tables.
+* Add **ERROR_CODES** return.
+
+### Fixed
+
+* Fix exection issues with new IDE version **HT-IDE3000 V8.1.5** .
+* Fix All uplink library feature can be embedded on the Soc but it is strongly recommended to use the **optimization flags** according to targetted the application in order to limit the memory footprint.
+
+### Known limitations
+
+* **600 bps** not compliant with 1.7 EP-SPECS.
+
 ## [v1.0](https://github.com/sigfox-tech-radio/sigfox-ep-example-holtek-bc68f2150/releases/tag/v1.0) - 02 Jun 2023
 
 ### General

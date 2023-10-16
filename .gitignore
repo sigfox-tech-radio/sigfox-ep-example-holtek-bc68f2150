@@ -1,0 +1,13 @@
+*.bin
+*.CV
+*.OBJ
+*.LST
+*.MAP
+*.list
+*.MTP
+*.DBG
+*.TSK
+*.ASM
+lcd.pjw
+.pjw
+output/

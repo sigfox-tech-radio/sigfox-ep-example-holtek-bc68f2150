@@ -45,10 +45,11 @@
 
 #if (defined ASYNCHRONOUS) || (defined BIDIRECTIONAL) || (defined ERROR_STACK)\
  || (defined REGULATORY) || (defined LOW_LEVEL_OPEN_CLOSE) || (defined RC3C)\
- || (!defined UL_PAYLOAD_SIZE) || (!defined TX_POWER_DBM_EIRP) || (defined ERROR_CODES)\
  || (!defined MESSAGE_COUNTER_ROLLOVER)
 	#error "BC68F2150 flag ERROR"
 #endif
+
+const MCU_RF_table_const_t *const_table_ptr; 
 
 static void _RF_power_on_sequence(void) {
 	_rf_pdb = 1;
@@ -62,16 +63,12 @@ static void _RF_power_on_sequence(void) {
 }
 
 RF_API_status_t RF_API_wake_up(void) {
-	//Timer CTM
-	_ctmc0	= 0b00101000;
-	_ctmc1	= 0b11000001;
-	_ctmal	= (49 & 0x00FF);
-	_ctmah	= (49 >> 8) & 0xFF;
-	_cton = 0;
-
+#ifdef ERROR_CODES
+    RF_API_status_t status = RF_API_SUCCESS;
+#endif
 	_RF_power_on_sequence();
 	//Step 1 
-	_rf_xo2	= 0b00100011; //16Mhz
+	_rf_xo2	= 0b00100011; //discordance with datasheet but limit spectrum template
 	_xclk_en = 1;
 	_xclkd2 = 0;
 	//Step 2
@@ -86,20 +83,50 @@ RF_API_status_t RF_API_wake_up(void) {
 	_rf_dfc_cal = 0b11000000;//Set MMD to high voltage to limit spectrum template
 	_xodiv2 = 0;
 	_rf_tx2 = 0xC0; //Set to minimum output power
+	
+	RETURN();
 }
 
 /*******************************************************************/
 RF_API_status_t RF_API_sleep(void) {
+#ifdef ERROR_CODES
+    RF_API_status_t status = RF_API_SUCCESS;
+#endif
 	//Step 12
 	GCC_DELAY(160);
 	_xclk_en = 0;
 	_rf_pdb = 0;
+	
+	RETURN();
 }
 //double tmp;
 /*******************************************************************/
 RF_API_status_t RF_API_init(RF_API_radio_parameters_t *radio_parameters) {
-	unsigned long dk;	
+#ifdef ERROR_CODES
+    RF_API_status_t status = RF_API_SUCCESS;
+#endif
 	
+	unsigned long dk;	
+	//Init modulation variable
+	if (radio_parameters->bit_rate_bps == 100) {
+		
+		_ctmc0	= 0b00101000;
+		_ctmc1	= 0b11000001;
+		_ctmal	= (49 & 0x00FF);
+		_ctmah	= (49 >> 8) & 0xFF;
+		_cton = 0;
+		if ((radio_parameters->tx_power_dbm_eirp >= 12 ) && (radio_parameters->tx_power_dbm_eirp < 14 ))
+			const_table_ptr = &mcu_rf_rodata.pwrtab_100bps_LP;
+		else if (radio_parameters->tx_power_dbm_eirp >= 14)
+			const_table_ptr = &mcu_rf_rodata.pwrtab_100bps_HP;
+	} else {
+		_ctmc0	= 0b00011000;
+		_ctmc1	= 0b11000001;
+		_ctmal	= (605 & 0x00FF);
+		_ctmah	= (605 >> 8) & 0xFF;
+		_cton = 0;
+		const_table_ptr = &mcu_rf_rodata.pwrtab_600bps_LP;
+	}
 	//Step 4-2 (Compute frequency)	
 	_rf_sx1 = radio_parameters->frequency_hz / 16000000;
 	//tmp = (((double)radio_parameters->frequency_hz / 16000000.0) - _rf_sx1);
@@ -114,7 +141,7 @@ RF_API_status_t RF_API_init(RF_API_radio_parameters_t *radio_parameters) {
 	_dtxd = 1; 			//Load first bit
 	//Step 7
 	_dir_en = 1;		//Direct mode
-	_fsk_en	= 0;		//Fsk mode
+	_fsk_en	= 0;		//OOK mode
 	//Step 8	
 	_sx_en = 1;
 	GCC_DELAY(160);
@@ -126,23 +153,32 @@ RF_API_status_t RF_API_init(RF_API_radio_parameters_t *radio_parameters) {
 
 /*******************************************************************/
 RF_API_status_t RF_API_de_init(void) {
+#ifdef ERROR_CODES
+    RF_API_status_t status = RF_API_SUCCESS;
+#endif
+
 	//Step 11
 	_dtxd = 0;
 	_tx_en = 0;
 	GCC_DELAY(16);
 	_sx_en = 0;
 
+	RETURN();
 }
 
 /*******************************************************************/
 RF_API_status_t RF_API_send(RF_API_tx_data_t *tx_data) {
-	/* To be implemented by the device manufacturer */
+#ifdef ERROR_CODES
+    RF_API_status_t status = RF_API_SUCCESS;
+#endif
 	unsigned char flipflop = 0;
 	unsigned char sample_cnt = 0;
 	unsigned char bitCnt = 0x00;
 	unsigned char byteCnt = 0x00;	
 	unsigned long dk = 0x00000000;
+	unsigned short deltaf;
 
+	deltaf = const_table_ptr->delta_f;
 	dk |= _rf_sx4;
 	dk = dk << 8;
 	dk |= _rf_sx3;
@@ -152,48 +188,63 @@ RF_API_status_t RF_API_send(RF_API_tx_data_t *tx_data) {
 	_cton = 1;
 	_ctmaf = 0;
 	//RampUP
-	for(sample_cnt = 0; sample_cnt < 200; sample_cnt++) {
+	for(sample_cnt = 0; sample_cnt < (const_table_ptr->size * 2); sample_cnt++) {
 		_pb3 = ~_pb3;
+		
+		if (sample_cnt < const_table_ptr->size) { 
+			_rf_tx2 = const_table_ptr->tab[((const_table_ptr->size - 1) - sample_cnt)];
+		} else {
+			_rf_tx2 = const_table_ptr->tab[0];
+		}
 		while(_ctmaf != 1);
 		_ctmaf = 0;
-		if (sample_cnt < sizeof(mcu_rf_rodata.pwrTab)) { 
-			_rf_tx2 = mcu_rf_rodata.pwrTab[((sizeof(mcu_rf_rodata.pwrTab) - 1) - sample_cnt)];
-		} else {
-			_rf_tx2 = mcu_rf_rodata.pwrTab[0];
-		}
 	}
 	//Data
 	for (byteCnt = 0; byteCnt < tx_data->bitstream_size_bytes; byteCnt++) { 
 		for (bitCnt = 0; bitCnt < 8; bitCnt++) {
-			for(sample_cnt = 0; sample_cnt < 200; sample_cnt++) {
+			for(sample_cnt = 0; sample_cnt < (const_table_ptr->size * 2); sample_cnt++) {
 				_pb3 = ~_pb3;
 				while(_ctmaf != 1);
 				_ctmaf = 0;
 				if ((tx_data->bitstream[byteCnt] & (0x80 >> bitCnt) ) == 0x00) {
-					if (sample_cnt < (sizeof(mcu_rf_rodata.pwrTab) - 1)) { //Table Up
-						_rf_tx2= mcu_rf_rodata.pwrTab[sample_cnt];
-						//_dtxd = 1;
+					if (sample_cnt < (const_table_ptr->size - 1)) { //Table Up
+						_rf_tx2= const_table_ptr->tab[sample_cnt];
+					//	_dtxd = 1;
 						_rf_sx4 = (dk >> 16) & 0xFF;	//DK[2]
 						_rf_sx3 = (dk >> 8) & 0xFF;	//DK[1]
 						_rf_sx2 = (dk) & 0xFF;		//DK[0]
 						
-					} else if (sample_cnt == (sizeof(mcu_rf_rodata.pwrTab) - 1)) { //Table change frequency +/-10khz =>656
-						_rf_tx2 = mcu_rf_rodata.pwrTab[sample_cnt]; 
-						//_dtxd = 0;
+					} else if (sample_cnt == (const_table_ptr->size - 1)) { //Table change frequency +/-10khz =>656
+						_rf_tx2 = const_table_ptr->tab[sample_cnt]; 
+					//	_dtxd = 0;
+
 						if (flipflop == 1) { //Negative frequency
-							_rf_sx4 = ((dk - 656) >> 16) & 0xFF;	//DK[2]
-							_rf_sx3 = ((dk - 656) >> 8) & 0xFF;	//DK[1]
-							_rf_sx2 = (dk - 656) & 0xFF;			//DK[0]
+							_rf_sx4 = ((dk - deltaf) >> 16) & 0xFF;	//DK[2]
+							_rf_sx3 = ((dk - deltaf) >> 8) & 0xFF;	//DK[1]
+							_rf_sx2 = (dk - deltaf) & 0xFF;			//DK[0]
 							flipflop = 0;
 						} else {			//Positive frequency
-							_rf_sx4 = ((dk + 656) >> 16) & 0xFF;	//DK[2]
-							_rf_sx3 = ((dk + 656) >> 8) & 0xFF;	//DK[1]
-							_rf_sx2 = (dk + 656) & 0xFF;			//DK[0]
+							_rf_sx4 = ((dk + deltaf) >> 16) & 0xFF;	//DK[2]
+							_rf_sx3 = ((dk + deltaf) >> 8) & 0xFF;	//DK[1]
+							_rf_sx2 = (dk + deltaf) & 0xFF;			//DK[0]
 							flipflop = 1;
-						}	 
+						}
+						
+					/*	
+						if (flipflop == 1) { //Negative frequency
+							_rf_sx4 = ((dk - const_table_ptr->delta_f) >> 16) & 0xFF;	//DK[2]
+							_rf_sx3 = ((dk - const_table_ptr->delta_f) >> 8) & 0xFF;	//DK[1]
+							_rf_sx2 = (dk - const_table_ptr->delta_f) & 0xFF;			//DK[0]
+							flipflop = 0;
+						} else {			//Positive frequency
+							_rf_sx4 = ((dk + const_table_ptr->delta_f) >> 16) & 0xFF;	//DK[2]
+							_rf_sx3 = ((dk + const_table_ptr->delta_f) >> 8) & 0xFF;	//DK[1]
+							_rf_sx2 = (dk + const_table_ptr->delta_f) & 0xFF;			//DK[0]
+							flipflop = 1;
+						}	*/ 
 					} else{	//Table Down
-						_rf_tx2 = mcu_rf_rodata.pwrTab[sizeof(mcu_rf_rodata.pwrTab) - (sample_cnt - (sizeof(mcu_rf_rodata.pwrTab) - 1))];
-						//_dtxd = 1;
+						_rf_tx2 = const_table_ptr->tab[const_table_ptr->size - (sample_cnt - (const_table_ptr->size - 1))];
+					//	_dtxd = 1;
 						_rf_sx4 = (dk >> 16) & 0xFF;	//DK[2]
 						_rf_sx3 = (dk >> 8) & 0xFF;	//DK[1]
 						_rf_sx2 = (dk) & 0xFF;		//DK[0]
@@ -203,32 +254,50 @@ RF_API_status_t RF_API_send(RF_API_tx_data_t *tx_data) {
 		}
 	}
 	//RampDown
-	for(sample_cnt = 0; sample_cnt < 200; sample_cnt++) {
+	for(sample_cnt = 0; sample_cnt < (const_table_ptr->size * 2); sample_cnt++) {
 		_pb3 = ~_pb3;
 		while(_ctmaf != 1);
 		_ctmaf = 0;
 		
-		if (sample_cnt < sizeof(mcu_rf_rodata.pwrTab)) { 
-			_rf_tx2 = mcu_rf_rodata.pwrTab[0];
+		if (sample_cnt < const_table_ptr->size) { 
+			_rf_tx2 = const_table_ptr->tab[0];
 		} else {
-			_rf_tx2 = mcu_rf_rodata.pwrTab[sample_cnt - sizeof(mcu_rf_rodata.pwrTab)];
+			_rf_tx2 = const_table_ptr->tab[sample_cnt - const_table_ptr->size];
 		}
 	}
 	_pb3 = 0;
 	while(_ctmaf != 1);
 	_ctmaf = 0;
 	_cton = 0;
+	
+	RETURN();
 }
 
-#ifdef TIMER_REQUIRED
+#if (defined TIMER_REQUIRED) && (defined LATENCY_COMPENSATION)
 /*******************************************************************/
 RF_API_status_t RF_API_get_latency(RF_API_latency_t latency_type, sfx_u32 *latency_ms) {
+#ifdef ERROR_CODES
+    RF_API_status_t status = RF_API_SUCCESS;
+#endif
+
+	RETURN();
 }
 #endif
 
 #ifdef VERBOSE
 /*******************************************************************/
 RF_API_status_t RF_API_get_version(sfx_u8 **version, sfx_u8 *version_size_char) {
+#ifdef ERROR_CODES
+    RF_API_status_t status = RF_API_SUCCESS;
+#endif
 
+	RETURN();
+}
+#endif
+
+#ifdef ERROR_CODES
+/*******************************************************************/
+void RF_API_error(void) {
+	/* To be implemented by the device manufacturer */
 }
 #endif

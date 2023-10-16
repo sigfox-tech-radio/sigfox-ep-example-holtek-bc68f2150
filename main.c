@@ -39,9 +39,16 @@ static const __attribute__((at(0x1D00))) unsigned char frame[12] = {0xAA, 0xAA, 
 #include "sigfox_rc.h"
 #include "sigfox_ep_api.h"
 
-SIGFOX_EP_API_application_message_t SIGFOX_EP_API_application_message;
+static void _delay_ms(unsigned short delay_ms) {
+	unsigned short count_ms;
+	for (count_ms=0 ; count_ms<delay_ms ; count_ms++) {
+		GCC_DELAY(4000);	
+	}
+}
+
+
 void main() {
-	unsigned short i;
+	SIGFOX_EP_API_application_message_t SIGFOX_EP_API_application_message;
 	SIGFOX_EP_API_config_t SIGFOX_EP_API_config; 
 	//Watchdog
 	_wdtc 	= 0b10101000;	//Disable WatchDog
@@ -59,19 +66,24 @@ void main() {
 	_pawu   = 0b11111111;
 	_pbc 	= 0b00000000;
 	_pb 	= 0b00001111;
-		
+	
+	_delay_ms(1000);
+	_pb 	= 0b00000000;	
 	SIGFOX_EP_API_config.rc = &SIGFOX_RC1;
 	SIGFOX_EP_API_open(&SIGFOX_EP_API_config);
+	SIGFOX_EP_API_application_message.common_parameters.t_ifu_ms = 500;
+	SIGFOX_EP_API_application_message.common_parameters.tx_power_dbm_eirp = 12;
 	SIGFOX_EP_API_application_message.type = SIGFOX_APPLICATION_MESSAGE_TYPE_BYTE_ARRAY;
-	SIGFOX_EP_API_application_message.common_parameters.number_of_frames= 3;
+	SIGFOX_EP_API_application_message.common_parameters.number_of_frames= 1;
+	SIGFOX_EP_API_application_message.ul_payload_size_bytes = 12;
 	SIGFOX_EP_API_application_message.ul_payload = frame;
 
-
-	SIGFOX_EP_API_send_application_message(&SIGFOX_EP_API_application_message);
 	while(1) {
-		
-		for(i = 0; i < 200; i++)
-			GCC_DELAY(16000);
+		// Trigger send with button.
+		while (_pa1 != 0);
+		_delay_ms(2000);
+		SIGFOX_EP_API_open(&SIGFOX_EP_API_config);		
 		SIGFOX_EP_API_send_application_message(&SIGFOX_EP_API_application_message);
+		SIGFOX_EP_API_close();
 	}
 }

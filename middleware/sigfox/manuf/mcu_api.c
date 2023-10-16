@@ -44,67 +44,122 @@
 
 #ifdef TIMER_REQUIRED
 MCU_API_status_t MCU_API_timer_start(MCU_API_timer_t *timer) {
+#ifdef ERROR_CODES
+    MCU_API_status_t status = MCU_API_SUCCESS;
+#endif
 	unsigned short i;
+	
 	for(i = 0; i < timer->duration_ms; i++) {
 		GCC_DELAY(4000);
 	}
+	
+	RETURN();
 }
 #endif
 
 #ifdef TIMER_REQUIRED
 MCU_API_status_t MCU_API_timer_stop(MCU_API_timer_instance_t timer_instance) {
+#ifdef ERROR_CODES
+    MCU_API_status_t status = MCU_API_SUCCESS;
+#endif
+	
+	RETURN();
 }
 #endif
 
 #if (defined TIMER_REQUIRED) && !(defined ASYNCHRONOUS)
 MCU_API_status_t MCU_API_timer_status(MCU_API_timer_instance_t timer_instance, sfx_bool *timer_has_elapsed) {
+#ifdef ERROR_CODES
+    MCU_API_status_t status = MCU_API_SUCCESS;
+#endif
 
+	RETURN();
 }
 #endif
 
 #if (defined TIMER_REQUIRED) && !(defined ASYNCHRONOUS)
 MCU_API_status_t MCU_API_timer_wait_cplt(MCU_API_timer_instance_t timer_instance) {
+#ifdef ERROR_CODES
+    MCU_API_status_t status = MCU_API_SUCCESS;
+#endif
 
+	RETURN();
 }
 #endif
 
 MCU_API_status_t MCU_API_aes_128_cbc_encrypt(MCU_API_encryption_data_t *aes_data) {
+#ifdef ERROR_CODES
+    MCU_API_status_t status = MCU_API_SUCCESS;
+#endif
 
 #ifdef PUBLIC_KEY_CAPABLE
     if (aes_data->key == SIGFOX_EP_KEY_PRIVATE) {
-        aes_encrypt(aes_data->data, (sfx_u8 *)mcu_rf_rodata.testkey);
+        aes_encrypt(aes_data->data, (sfx_u8 *)mcu_rf_rodata.key);
     } else if ((aes_data->key == SIGFOX_EP_KEY_PUBLIC)) {
         aes_encrypt(aes_data->data, (sfx_u8 *)SIGFOX_EP_PUBLIC_KEY);
     }
 #else
-    aes_encrypt(aes_data->data, (sfx_u8 *) mcu_rf_rodata.testkey);
+    aes_encrypt(aes_data->data, (sfx_u8 *) mcu_rf_rodata.key);
 #endif
+
+	RETURN();
 }
 
 MCU_API_status_t MCU_API_get_ep_id(sfx_u8 *ep_id, sfx_u8 ep_id_size_bytes) {
+#ifdef ERROR_CODES
+    MCU_API_status_t status = MCU_API_SUCCESS;
+#endif
+	
 	IAP_read(0x1E00, (unsigned short*)ep_id, ep_id_size_bytes / 2);
+
+	RETURN();
 }
 
 MCU_API_status_t MCU_API_get_nvm(sfx_u8 *nvm_data, sfx_u8 nvm_data_size_bytes) {
+#ifdef ERROR_CODES
+    MCU_API_status_t status = MCU_API_SUCCESS;
+#endif
 	IAP_read(0x1F00, (unsigned short*)nvm_data, nvm_data_size_bytes / 2);
+	
+	RETURN();
 }
 
 MCU_API_status_t MCU_API_set_nvm(sfx_u8 *nvm_data, sfx_u8 nvm_data_size_bytes) {
+#ifdef ERROR_CODES
+    MCU_API_status_t status = MCU_API_SUCCESS;
+#endif
 	IAP_write(0x1F00, (unsigned short*)nvm_data, nvm_data_size_bytes / 2, 1);
+	
+	RETURN();
 }
 
 #ifdef VERBOSE
 MCU_API_status_t MCU_API_get_initial_pac(sfx_u8 *initial_pac, sfx_u8 initial_pac_size_bytes) {
+#ifdef ERROR_CODES
+    MCU_API_status_t status = MCU_API_SUCCESS;
+#endif
 
+	RETURN();
 }
 #endif
 
 #ifdef VERBOSE
 MCU_API_status_t MCU_API_get_version(sfx_u8 **version, sfx_u8 *version_size_char) {
+#ifdef ERROR_CODES
+    MCU_API_status_t status = MCU_API_SUCCESS;
+#endif
 
 	/* To be implemented by the device manufacturer */
     (*version) = (sfx_u8*) mcu_rf_rodata.version;
     (*version_size_char) = (sfx_u8) sizeof(mcu_rf_rodata.version);
+    
+    RETURN();
 }
 #endif
 
+#ifdef ERROR_CODES
+/*******************************************************************/
+void MCU_API_error(void) {
+	/* To be implemented by the device manufacturer */
+}
+#endif

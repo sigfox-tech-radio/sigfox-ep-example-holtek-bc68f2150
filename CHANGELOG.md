@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.2](https://github.com/sigfox-tech-radio/sigfox-ep-example-holtek-bc68f2150/releases/tag/v1.2) - 20 Oct 2023
+
+### Changed
+
+* Change **tx_power_dbm_eirp** to 14 dBm (maximum power).
+* Change **number_of_frames** to 3 frame per message.
+* Remove docs folder.
+
+### Fixed
+
 ## [v1.1](https://github.com/sigfox-tech-radio/sigfox-ep-example-holtek-bc68f2150/releases/tag/v1.1) - 16 Oct 2023
 
 ### Changed

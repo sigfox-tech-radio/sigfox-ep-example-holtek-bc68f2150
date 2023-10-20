@@ -72,9 +72,9 @@ void main() {
 	SIGFOX_EP_API_config.rc = &SIGFOX_RC1;
 	SIGFOX_EP_API_open(&SIGFOX_EP_API_config);
 	SIGFOX_EP_API_application_message.common_parameters.t_ifu_ms = 500;
-	SIGFOX_EP_API_application_message.common_parameters.tx_power_dbm_eirp = 12;
+	SIGFOX_EP_API_application_message.common_parameters.tx_power_dbm_eirp = 14;
 	SIGFOX_EP_API_application_message.type = SIGFOX_APPLICATION_MESSAGE_TYPE_BYTE_ARRAY;
-	SIGFOX_EP_API_application_message.common_parameters.number_of_frames= 1;
+	SIGFOX_EP_API_application_message.common_parameters.number_of_frames = 3;
 	SIGFOX_EP_API_application_message.ul_payload_size_bytes = 12;
 	SIGFOX_EP_API_application_message.ul_payload = frame;
 

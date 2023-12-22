@@ -55,6 +55,7 @@ All gerbers and schematics are available in the wiki of this repository.
 
 ```bash
 $ git clone https://github.com/sigfox-tech-radio/sigfox-ep-example-holtek-bc68f2150.git
+$ cd sigfox-ep-example-holtek-bc68f2150
 $ git submodule init
 $ git submodule update
 ```

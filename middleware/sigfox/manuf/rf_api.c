@@ -156,7 +156,9 @@ RF_API_status_t RF_API_de_init(void) {
 #ifdef ERROR_CODES
     RF_API_status_t status = RF_API_SUCCESS;
 #endif
-
+    //In case of Continous Wave, reset PA configuration and turn off LED
+    _pb3 = 0;
+    _rf_tx2 = 0xC0;
 	//Step 11
 	_dtxd = 0;
 	_tx_en = 0;
@@ -229,19 +231,6 @@ RF_API_status_t RF_API_send(RF_API_tx_data_t *tx_data) {
 							_rf_sx2 = (dk + deltaf) & 0xFF;			//DK[0]
 							flipflop = 1;
 						}
-						
-					/*	
-						if (flipflop == 1) { //Negative frequency
-							_rf_sx4 = ((dk - const_table_ptr->delta_f) >> 16) & 0xFF;	//DK[2]
-							_rf_sx3 = ((dk - const_table_ptr->delta_f) >> 8) & 0xFF;	//DK[1]
-							_rf_sx2 = (dk - const_table_ptr->delta_f) & 0xFF;			//DK[0]
-							flipflop = 0;
-						} else {			//Positive frequency
-							_rf_sx4 = ((dk + const_table_ptr->delta_f) >> 16) & 0xFF;	//DK[2]
-							_rf_sx3 = ((dk + const_table_ptr->delta_f) >> 8) & 0xFF;	//DK[1]
-							_rf_sx2 = (dk + const_table_ptr->delta_f) & 0xFF;			//DK[0]
-							flipflop = 1;
-						}	*/ 
 					} else{	//Table Down
 						_rf_tx2 = const_table_ptr->tab[const_table_ptr->size - (sample_cnt - (const_table_ptr->size - 1))];
 					//	_dtxd = 1;
@@ -280,6 +269,19 @@ RF_API_status_t RF_API_get_latency(RF_API_latency_t latency_type, sfx_u32 *laten
     RF_API_status_t status = RF_API_SUCCESS;
 #endif
 
+	RETURN();
+}
+#endif
+
+#ifdef CERTIFICATION
+/*******************************************************************/
+RF_API_status_t RF_API_start_continuous_wave(void) {
+#ifdef ERROR_CODES
+	RF_API_status_t status = RF_API_SUCCESS;
+#endif
+    //Turn on LED and set PA according to the define table
+    _pb3 = 1;
+    _rf_tx2 = const_table_ptr->tab[0];
 	RETURN();
 }
 #endif

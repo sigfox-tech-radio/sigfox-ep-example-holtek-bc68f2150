@@ -1,3 +1,3 @@
 [submodule "middleware/sigfox/sigfox-ep-lib"]
 	path = middleware/sigfox/sigfox-ep-lib
-	url = git@github.com:sigfox-tech-radio/sigfox-ep-lib.git
+	url = https://github.com/sigfox-tech-radio/sigfox-ep-lib.git

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.3](https://github.com/sigfox-tech-radio/sigfox-ep-example-holtek-bc68f2150/releases/tag/v1.3) - 22 Dec 2023
+
+### Add
+
+* Continous Wave implementation.
+
+### Changed
+
+* Change submodule address (ssh to https).
+* Update **sigfox-ep-lib** submodule version from V3.3 to V3.4.
+* Remove some comments.
+
 ## [v1.2](https://github.com/sigfox-tech-radio/sigfox-ep-example-holtek-bc68f2150/releases/tag/v1.2) - 20 Oct 2023
 
 ### Changed
